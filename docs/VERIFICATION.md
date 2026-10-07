@@ -115,3 +115,8 @@ The midnight transition is covered by date-boundary/DST tests and the same revea
 
 - Updated the existing daily post in games in place to the current speaker-heading layout. Matched both saved context excerpts to their source neighbors before adding their original timestamps.
 - Verified three timestamps, unchanged Guess controls, and unchanged source, author, message text, media, choices, guess limit, status and Discord message ID. Only context timestamp metadata and the post's display text changed; guesses and results were not edited. Existing embeds were preserved.
+
+## October 7: five guesses
+
+- New rounds allow five guesses. Migration 0007 rebuilt `attempts` to raise its CHECK limit to five, keeping all existing attempts (203 live). Earlier rounds keep their saved three-guess limit. Applied to live and test databases, deployed, and re-registered the command description.
+- At the user's request, replaced today's three-guess daily puzzle. The user deleted its posts in games, and a read-only API check confirmed none remained. Its rows (round, 3 results, 9 attempts) were backed up to an ignored local file and then removed from the live database only. Scheduled maintenance posted a new five-guess puzzle for today. No other rounds, scores, or Discord messages were changed.
