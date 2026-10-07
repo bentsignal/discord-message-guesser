@@ -59,7 +59,8 @@ export function roundPayload(round: Round, revealed = false, _total = 0, _correc
     components: revealed ? [] : [{ type: 1, components: [{type: 2, style: 1, label: 'Guess', custom_id: `play:${round.id}`}]}],
   };
 }
-export function resultSquares(correct:number,used=1,limit=3):string {
+export const GUESS_LIMIT=5;
+export function resultSquares(correct:number,used=1,limit=GUESS_LIMIT):string {
   return '🟥'.repeat(Math.max(0,used-(correct?1:0)))+(correct?'🟩':'')+'⬜'.repeat(Math.max(0,limit-used));
 }
 export function resultPayload(guess: Guess, round: Round) {

@@ -43,7 +43,7 @@ In the Discord application settings, set the Interactions Endpoint URL to `https
 
 ## 3. Test and enable daily games
 
-Run `/guesser-admin practice`. The initial author-count checks run in small batches; retry after a short pause if the bot is not ready. Verify a correct guess, three misses, and `/guesser-admin finish-practice`. Practice scores do not affect the leaderboard.
+Run `/guesser-admin practice`. The initial author-count checks run in small batches; retry after a short pause if the bot is not ready. Verify a correct guess, five misses, and `/guesser-admin finish-practice`. Practice scores do not affect the leaderboard.
 
 For an optional private test channel, add `TEST_CHANNEL_ID` to your configuration and a second D1 binding named `TEST_DB` pointing to a separate, migrated database. Commands and buttons in that channel use testing data; the daily schedule uses only `DB` and `GAME_CHANNEL_ID`.
 

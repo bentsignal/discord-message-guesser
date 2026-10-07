@@ -20,7 +20,7 @@ function statement(sql: string, args: any[] = []): any {
 const msg=(id:string,content='a historical quote'):Message=>({id,content,type:0,timestamp:'2016-01-01T00:00:00Z',author:{id:'author',username:'author'}});
 beforeEach(()=>{
   vi.spyOn(eligibility,'eligibleAuthors').mockResolvedValue({ready:true,remaining:0,members:[{user:{id:'author',username:'author'}}]});
-  db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../migrations/0001_initial.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0002_recaps.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0003_media.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0005_three_guesses.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0006_regular_authors.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0004_on_demand.sql',import.meta.url),'utf8'));
+  db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../migrations/0001_initial.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0002_recaps.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0003_media.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0005_three_guesses.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0006_regular_authors.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0007_five_guesses.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0004_on_demand.sql',import.meta.url),'utf8'));
   env={DB:{prepare:statement,batch:async(stmts:any[])=>{db.exec('BEGIN');try{const r=[];for(const s of stmts)r.push(await s.run());db.exec('COMMIT');return r;}catch(e){db.exec('ROLLBACK');throw e;}}} as any,
     GUILD_ID:'guild',SOURCE_CHANNEL_ID:'source',GAME_CHANNEL_ID:'game',DISCORD_APPLICATION_ID:'bot',DISCORD_TOKEN:'test-token',TIME_ZONE:'America/New_York',DISCORD_PUBLIC_KEY:''};
 });
@@ -79,7 +79,7 @@ describe('resumable history and daily lifecycle',()=>{
   });
   it('can create a practice puzzle immediately without importing history',async()=>{
     vi.stubGlobal('fetch',vi.fn(async(url:any)=>String(url).includes('/members/')?response({user:{id:'author'}}):response(msg('1'))));
-    expect(await createRound(env,'practice-test','1')).toMatchObject({practice:1,source_id:'1'});
+    expect(await createRound(env,'practice-test','1')).toMatchObject({practice:1,source_id:'1',guess_limit:5});
   });
   it('does not select a message from an author outside the regular-author pool',async()=>{
     vi.mocked(eligibility.eligibleAuthors).mockResolvedValue({ready:true,remaining:0,members:[{user:{id:'someone-else',username:'regular'}}]});

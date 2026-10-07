@@ -2,7 +2,7 @@ import type { Env, Interaction, Round, Guess } from './types';
 import { discord, dismissPrivatePicker, noMentions, verifySignature } from './discord';
 import {INSERT_ATTEMPT} from './attempts';
 import {roster,memberControls} from './members';
-import { gameDay, resultSquares, originalMessageUrl } from './game';
+import { GUESS_LIMIT, gameDay, resultSquares, originalMessageUrl } from './game';
 import { createRound, currentMember, maintenance, publishResults, publishRound, publishRecaps, revealOldRounds, state, withLease } from './storage';
 
 export function interactionEnv(env:Env,i:Interaction):Env {
@@ -26,7 +26,7 @@ async function showSelector(env: Env, i: Interaction, roundId: string,page=0,not
 }
 async function submitGuess(env: Env, i: Interaction, roundId: string,expected=0) {
   const guessed = i.data?.values?.[0];
-  if (!guessed || !/^\d{17,20}$/.test(guessed) || i.data?.values?.length!==1 || !Number.isInteger(expected) || expected<0 || expected>2) return reply('Choose one server member.');
+  if (!guessed || !/^\d{17,20}$/.test(guessed) || i.data?.values?.length!==1 || !Number.isInteger(expected) || expected<0 || expected>=GUESS_LIMIT) return reply('Choose one server member.');
   const round=await env.DB.prepare('SELECT * FROM rounds WHERE id=?').bind(roundId).first<Round>();
   if(round?.eligible_authors_json && !(JSON.parse(round.eligible_authors_json) as string[]).includes(guessed))return showSelector(env,i,roundId,0,'Choose someone from this puzzle’s list.');
   if (!(await currentMember(env,guessed))) return showSelector(env,i,roundId,0,'That person is no longer in the server. Your guess was not used.');
@@ -45,7 +45,7 @@ function isAdmin(i: Interaction) {
 async function command(env: Env, i: Interaction) {
   const sub = i.data?.options?.[0]?.name || 'play';
   if (sub==='play') return showSelector(env,i,gameDay(new Date(),env.TIME_ZONE));
-  if (sub==='help') return reply('**How to play**\nYou’re looking at three messages from #everything, in the order they were sent. **Guess who sent the middle message**, shown in bold under **👤 ???**. The messages above and below it are clues to the conversation. If they also say ???, they were sent by the same person you’re guessing.\n\nClick **Guess** and choose a name. You get **three tries**; choosing a name submits it. 🟥 means a wrong guess, 🟩 means correct, and ⬜ means an unused try.\n\nGet it right and you’ll receive a private link to the original message. Everyone gets the answer and link at midnight Eastern, when the next round starts.\n\n`/guesser stats` — your scores\n`/guesser leaderboard` — top scores');
+  if (sub==='help') return reply('**How to play**\nYou’re looking at three messages from #everything, in the order they were sent. **Guess who sent the middle message**, shown in bold under **👤 ???**. The messages above and below it are clues to the conversation. If they also say ???, they were sent by the same person you’re guessing.\n\nClick **Guess** and choose a name. You get **five tries**; choosing a name submits it. 🟥 means a wrong guess, 🟩 means correct, and ⬜ means an unused try.\n\nGet it right and you’ll receive a private link to the original message. Everyone gets the answer and link at midnight Eastern, when the next round starts.\n\n`/guesser stats` — your scores\n`/guesser leaderboard` — top scores');
   if (sub==='stats') {
     const stats = await env.DB.prepare(`SELECT COUNT(*) AS played, COALESCE(SUM(g.correct),0) AS wins FROM guesses g
       JOIN rounds r ON r.id=g.round_id WHERE g.user_id=? AND r.practice=0`).bind(i.member!.user.id).first<{played:number;wins:number}>();

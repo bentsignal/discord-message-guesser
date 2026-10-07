@@ -1,6 +1,6 @@
 import type { Env, Message, Round, Member, Guess } from './types';
 import { discord, DiscordError, noMentions, nonce } from './discord';
-import { eligibleMessage, gameDay, roundPayload, recapPages, resultPayload, recapPayload } from './game';
+import { GUESS_LIMIT, eligibleMessage, gameDay, roundPayload, recapPages, resultPayload, recapPayload } from './game';
 
 import { parseMedia, validateMedia } from './media';
 import {finalizeUnfinished} from './attempts';
@@ -78,11 +78,11 @@ export async function createRound(env: Env, id?: string, sourceId?: string): Pro
     };
     const context=JSON.stringify({before:await contextEntry(before[0]),after:await contextEntry(after[0])});
     // Reserve room for context without disqualifying a long target message.
-    const preview={id:roundId,day,practice:id?1:0,source_id:live.id,author_id:live.author.id,content:live.content,media_json:JSON.stringify(media),context_json:context,guess_limit:3,status:'pending',discord_id:null,revealed:0};
+    const preview={id:roundId,day,practice:id?1:0,source_id:live.id,author_id:live.author.id,content:live.content,media_json:JSON.stringify(media),context_json:context,guess_limit:GUESS_LIMIT,status:'pending',discord_id:null,revealed:0};
     const safeContext=roundPayload(preview).content.length<=2000?context:'{}';
     await env.DB.batch([
-      env.DB.prepare('INSERT OR IGNORE INTO rounds(id,day,practice,source_id,author_id,content,media_json,context_json,guess_limit,eligible_authors_json) VALUES (?,?,?,?,?,?,?,?,3,?)')
-        .bind(roundId,day,id?1:0,live.id,live.author.id,live.content,JSON.stringify(media),safeContext,JSON.stringify(authors)),
+      env.DB.prepare('INSERT OR IGNORE INTO rounds(id,day,practice,source_id,author_id,content,media_json,context_json,guess_limit,eligible_authors_json) VALUES (?,?,?,?,?,?,?,?,?,?)')
+        .bind(roundId,day,id?1:0,live.id,live.author.id,live.content,JSON.stringify(media),safeContext,GUESS_LIMIT,JSON.stringify(authors)),
     ]);
     return env.DB.prepare('SELECT * FROM rounds WHERE id=?').bind(roundId).first<Round>();
   }

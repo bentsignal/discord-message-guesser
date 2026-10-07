@@ -6,7 +6,7 @@ import {memberControls} from '../src/members';
 import {eligibleMessage,roundPayload,resultSquares} from '../src/game';
 import type {Env,Message,Round} from '../src/types';
 let db:DatabaseSync;
-beforeEach(()=>{db=new DatabaseSync(':memory:');for(const name of ['0001_initial','0002_recaps','0003_media','0004_on_demand','0005_three_guesses','0006_regular_authors'])db.exec(readFileSync(new URL(`../migrations/${name}.sql`,import.meta.url),'utf8'));db.exec("INSERT INTO rounds(id,day,source_id,author_id,content,status,guess_limit) VALUES ('round','2026-09-26','source','author','quote','open',3)");});
+beforeEach(()=>{db=new DatabaseSync(':memory:');for(const name of ['0001_initial','0002_recaps','0003_media','0004_on_demand','0005_three_guesses','0006_regular_authors','0007_five_guesses'])db.exec(readFileSync(new URL(`../migrations/${name}.sql`,import.meta.url),'utf8'));db.exec("INSERT INTO rounds(id,day,source_id,author_id,content,status,guess_limit) VALUES ('round','2026-09-26','source','author','quote','open',3)");});
 afterEach(()=>db.close());
 const attempt=(expected:number,guessed:string,interaction='i'+expected,user='player')=>db.prepare(INSERT_ATTEMPT).get(user,guessed,expected,guessed,interaction,'round','2026-09-26',expected,user,expected,user);
 const outcomes=()=>db.prepare('SELECT * FROM guesses').all();
@@ -36,6 +36,23 @@ describe('three guesses',()=>{
   const env={DB:{prepare:(sql:string)=>({bind:(...args:any[])=>({run:async()=>db.prepare(sql).run(...args)})})}} as unknown as Env;
   await finalizeUnfinished(env,'round');await finalizeUnfinished(env,'round');expect(outcomes()).toMatchObject([{correct:0,attempts_used:1}]);
  });
+ it('allows five guesses on new rounds and publishes one loss only at the fifth miss',()=>{
+  db.exec("UPDATE rounds SET guess_limit=5");
+  for(const [n,name] of ['one','two','three','four'].entries()){expect(attempt(n,name)).toMatchObject({attempt:n+1,correct:0});}
+  expect(outcomes()).toEqual([]);expect(attempt(4,'five')).toMatchObject({attempt:5,correct:0});
+  expect(outcomes()).toMatchObject([{correct:0,attempts_used:5}]);expect(attempt(5,'author')).toBeUndefined();
+ });
+ it('keeps attempts recorded before the five-guess migration',()=>{
+  const old=new DatabaseSync(':memory:');
+  for(const name of ['0001_initial','0002_recaps','0003_media','0004_on_demand','0005_three_guesses','0006_regular_authors'])old.exec(readFileSync(new URL(`../migrations/${name}.sql`,import.meta.url),'utf8'));
+  old.exec("INSERT INTO rounds(id,day,source_id,author_id,content,status,guess_limit) VALUES ('round','2026-09-26','source','author','quote','open',3)");
+  old.exec("INSERT INTO attempts(round_id,user_id,guessed_id,attempt,correct,interaction_id) VALUES ('round','player','wrong',1,0,'kept')");
+  old.exec(readFileSync(new URL('../migrations/0007_five_guesses.sql',import.meta.url),'utf8'));
+  expect(old.prepare('SELECT user_id,attempt,interaction_id FROM attempts').all()).toMatchObject([{user_id:'player',attempt:1,interaction_id:'kept'}]);
+  old.exec("INSERT INTO attempts(round_id,user_id,guessed_id,attempt,correct,interaction_id) VALUES ('round','player','author',2,1,'won')");
+  expect(old.prepare('SELECT correct,attempts_used FROM guesses').all()).toMatchObject([{correct:1,attempts_used:2}]);
+  old.close();
+ });
  it('preserves old one-guess round rules and existing outcomes',()=>{
   db.exec("UPDATE rounds SET guess_limit=1");attempt(0,'wrong');expect(outcomes()).toMatchObject([{correct:0,attempts_used:1}]);
   expect(attempt(1,'author')).toBeUndefined();
@@ -63,6 +80,6 @@ describe('readable clues and member choices',()=>{
   expect(payload.content).not.toContain('secret');expect(payload.content).not.toContain('<@123');
  });
  it('shows attempts and unused slots clearly',()=>{
-  expect(resultSquares(1,2,3)).toBe('🟥🟩⬜');expect(resultSquares(0,3,3)).toBe('🟥🟥🟥');expect(resultSquares(0,1,3)).toBe('🟥⬜⬜');
+  expect(resultSquares(1,2,3)).toBe('🟥🟩⬜');expect(resultSquares(0,3,3)).toBe('🟥🟥🟥');expect(resultSquares(0,1,3)).toBe('🟥⬜⬜');expect(resultSquares(1,3)).toBe('🟥🟥🟩⬜⬜');
  });
 });

@@ -1,7 +1,7 @@
 {
   "name": "cathedral-guesser",
   "version": "1.0.0",
-  "description": "A daily three-guess Discord history game on Cloudflare Workers",
+  "description": "A daily five-guess Discord history game on Cloudflare Workers",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",

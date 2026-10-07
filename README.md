@@ -5,7 +5,7 @@ A daily Discord game: guess who sent an old message from your server.
 ## Rules
 
 - The bot shows three messages from a channel’s history. Guess who sent the **bold middle message**; the messages above and below are context.
-- Click **Guess** and select a name. You get three tries.
+- Click **Guess** and select a name. You get five tries.
 - `???` hides the author, including on nearby messages they sent.
 - 🟥 is a miss, 🟩 is correct, and ⬜ is an unused try. Results are public; guessed names stay private.
 - A correct guess gives you a private link to the original message. At the daily reset, everyone gets the answer, link, and results recap.
